@@ -55,6 +55,36 @@ def plot_loss_curves(train_losses, val_losses, save_dir=DEFAULT_RESULTS_DIR, opt
     plt.close()
     print(f"Loss curves saved to '{path}'")
 
+def plot_accuracy_curves(train_accuracies, val_accuracies, save_dir=DEFAULT_RESULTS_DIR, optimizer=None, learning_rate=None):
+    epochs = range(1, len(train_accuracies) + 1)
+    plt.figure(figsize=(10, 6))
+    plt.plot(epochs, train_accuracies, "b-", label="Training Accuracy")
+    plt.plot(epochs, val_accuracies, "r-", label="Validation Accuracy")
+
+    markers = [i for i in epochs if i % 10 == 0 or i == 1 or i == len(epochs)]
+    plt.plot(markers, [train_accuracies[i - 1] for i in markers], "bo")
+    plt.plot(markers, [val_accuracies[i - 1] for i in markers], "ro")
+
+    plt.title("Training and Validation Accuracy")
+    plt.xlabel("Epochs")
+    plt.ylabel("Accuracy (%)")
+    plt.legend()
+    plt.grid(True)
+
+    os.makedirs(save_dir, exist_ok=True)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"accuracy_curves_{timestamp}"
+    if optimizer:
+        filename += f"_{optimizer}"
+    if learning_rate:
+        filename += f"_lr{str(learning_rate).replace('.', '-')}"
+    filename += ".png"
+
+    path = os.path.join(save_dir, filename)
+    plt.savefig(path)
+    plt.close()
+    print(f"Accuracy curves saved to '{path}'")
+
 
 class Logger:
     """Tees stdout to a timestamped log file and records git info + hyperparams."""

@@ -7,4 +7,4 @@ output/checkpoints/
 output/logs/
 output/results/
 slurm_logs/
-
+.claude/

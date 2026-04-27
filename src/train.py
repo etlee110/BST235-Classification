@@ -6,7 +6,7 @@ import sys
 import torch
 from tqdm import tqdm
 
-from utils import Logger, plot_loss_curves, save_checkpoint
+from utils import Logger, plot_loss_curves, plot_accuracy_curves, save_checkpoint
 
 
 class Trainer:
@@ -42,7 +42,9 @@ class Trainer:
 
         self.train_losses = []
         self.val_losses = []
-        self.best_val_loss = float("inf")
+        self.train_accs = []
+        self.val_accs = []
+        self.best_val_acc = 0.0
         self.start_time = datetime.datetime.now()
 
         self.logger = None
@@ -55,6 +57,8 @@ class Trainer:
     def _train_epoch(self, epoch, pbar=None):
         self.model.train()
         running_loss = 0.0
+        correct = 0
+        total = 0
 
         for data, targets in self.train_loader:
             data, targets = data.to(self.device), targets.to(self.device)
@@ -66,24 +70,31 @@ class Trainer:
             self.optimizer.step()
 
             running_loss += loss.item()
+            correct += (predictions.argmax(dim=1) == targets).sum().item()
+            total += targets.size(0)
+
             if pbar:
                 pbar.update(1)
-                pbar.set_postfix(train_loss=f"{loss.item():.6f}")
+                pbar.set_postfix(train_loss=f"{loss.item():.4f}")
 
-        return running_loss / len(self.train_loader)
+        return running_loss / len(self.train_loader), correct / total
 
     def _evaluate_model(self, loader=None):
         loader = loader or self.val_loader
         self.model.eval()
         running_loss = 0.0
+        correct = 0
+        total = 0
 
         with torch.no_grad():
             for data, targets in loader:
                 data, targets = data.to(self.device), targets.to(self.device)
                 predictions = self.model(data)
                 running_loss += self.loss_fn(predictions, targets).item()
+                correct += (predictions.argmax(dim=1) == targets).sum().item()
+                total += targets.size(0)
 
-        return running_loss / len(loader)
+        return running_loss / len(loader), correct / total
 
     def _save_checkpoint(self, epoch):
         opt_name = self.hyperparams.get("OPTIMIZER", type(self.optimizer).__name__)
@@ -119,15 +130,17 @@ class Trainer:
     def train(self):
         print(f"Training on {self.device}")
 
-        initial_train = self._evaluate_model(loader=self.train_loader)
-        initial_val = self._evaluate_model()
+        initial_train_loss, initial_train_acc = self._evaluate_model(loader=self.train_loader)
+        initial_val_loss, initial_val_acc = self._evaluate_model()
         print(
-            f"Epoch 0/{self.num_epochs}: 100%|██████████| "
-            f"{len(self.train_loader)}/{len(self.train_loader)} "
-            f"[00:00<00:00, 0.00it/s, train_loss={initial_train:.6f}, val_loss={initial_val:.6f}]"
+            f"Epoch 0/{self.num_epochs}: "
+            f"train_loss={initial_train_loss:.4f} train_acc={initial_train_acc:.4f} "
+            f"val_loss={initial_val_loss:.4f} val_acc={initial_val_acc:.4f}"
         )
-        self.train_losses.append(initial_train)
-        self.val_losses.append(initial_val)
+        self.train_losses.append(initial_train_loss)
+        self.val_losses.append(initial_val_loss)
+        self.train_accs.append(initial_train_acc)
+        self.val_accs.append(initial_val_acc)
 
         for epoch in range(self.num_epochs):
             with tqdm(
@@ -136,15 +149,22 @@ class Trainer:
                 desc=f"Epoch {epoch+1}/{self.num_epochs}",
                 bar_format="{l_bar}{bar:10}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
             ) as pbar:
-                train_loss = self._train_epoch(epoch, pbar)
-                self.train_losses.append(train_loss)
-                val_loss = self._evaluate_model()
-                self.val_losses.append(val_loss)
-                pbar.set_postfix(train_loss=f"{train_loss:.6f}", val_loss=f"{val_loss:.3f}")
+                train_loss, train_acc = self._train_epoch(epoch, pbar)
+                val_loss, val_acc = self._evaluate_model()
+                pbar.set_postfix(
+                    train_acc=f"{train_acc:.4f}",
+                    val_acc=f"{val_acc:.4f}",
+                    val_loss=f"{val_loss:.4f}",
+                )
 
-            if val_loss < self.best_val_loss:
-                self.best_val_loss = val_loss
-                print(f"<<<<<< reach best val loss : {val_loss} >>>>>>")
+            self.train_losses.append(train_loss)
+            self.val_losses.append(val_loss)
+            self.train_accs.append(train_acc)
+            self.val_accs.append(val_acc)
+
+            if val_acc > self.best_val_acc:
+                self.best_val_acc = val_acc
+                print(f"<<<<<< best val acc: {val_acc:.4f} >>>>>>")
                 opt_name = self.hyperparams.get("OPTIMIZER", type(self.optimizer).__name__)
                 lr_val = self.hyperparams.get("LEARNING_RATE", "unk")
                 save_checkpoint(
@@ -157,16 +177,24 @@ class Trainer:
                 self._save_checkpoint(epoch + 1)
 
         if self.use_logger and self.logger:
-            self.logger.log_final_metrics(self.train_losses[-1], self.val_losses[-1])
+            self.logger.log_final_metrics(
+                self.train_losses[-1], self.val_losses[-1],
+                self.train_accs[-1], self.val_accs[-1],
+            )
 
         plot_loss_curves(
-            self.train_losses,
-            self.val_losses,
+            self.train_losses, self.val_losses,
             save_dir=self.results_dir,
             optimizer=self.hyperparams.get("OPTIMIZER"),
             learning_rate=self.hyperparams.get("LEARNING_RATE"),
         )
-        print("Training completed!")
+        plot_accuracy_curves(
+            self.train_accs, self.val_accs,
+            save_dir=self.results_dir,
+            optimizer=self.hyperparams.get("OPTIMIZER"),
+            learning_rate=self.hyperparams.get("LEARNING_RATE"),
+        )
+        print(f"Training completed! Best val acc: {self.best_val_acc:.4f}")
 
         if self.use_logger and self.logger:
             print(f"Log file: {self.logger.get_log_file_path()}")
