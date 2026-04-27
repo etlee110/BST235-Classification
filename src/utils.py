@@ -139,10 +139,12 @@ class Logger:
             self.write(f"{k}: {v}\n")
         self.write("=" * 50 + "\n\n")
 
-    def log_final_metrics(self, train_loss, val_loss):
+    def log_final_metrics(self, train_loss, val_loss, train_acc, val_acc):
         self.write("\n" + "=" * 50 + "\nFINAL METRICS\n" + "=" * 50 + "\n")
         self.write(f"Final Training Loss: {train_loss:.6f}\n")
         self.write(f"Final Validation Loss: {val_loss:.6f}\n")
+        self.write(f"Final Training Acc:  {train_acc:.4f}\n")
+        self.write(f"Final Validation Acc: {val_acc:.4f}\n")
         self.write("=" * 50 + "\n\n")
 
     def get_log_file_path(self):

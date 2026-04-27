@@ -4,19 +4,14 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-# CIFAR-10 channel means and stds (computed over cars + trucks)
-_MEAN = (0.4914, 0.4822, 0.4465)
-_STD  = (0.2470, 0.2435, 0.2616)
-
 
 class CifarCarTruckDataset(Dataset):
-    def __init__(self, x: np.ndarray, y: np.ndarray, augment: bool = False):
+    def __init__(self, x: np.ndarray, y: np.ndarray, mean: torch.Tensor,
+                 std: torch.Tensor, augment: bool = False):
         # x: (N, C, H, W) float32 [0,1]   y: (N,) int64
         self.x = torch.from_numpy(x)
         self.y = torch.from_numpy(y)
         self.augment = augment
-        mean = torch.tensor(_MEAN).view(3, 1, 1)
-        std  = torch.tensor(_STD).view(3, 1, 1)
         self.mean = mean
         self.std  = std
 
@@ -56,8 +51,13 @@ def get_loaders(batch_size, val_split=0.2, seed=42, num_workers=0,
     val_idx   = idx[:n_val]
     train_idx = idx[n_val:]
 
-    train_ds = CifarCarTruckDataset(x_all[train_idx], y_all[train_idx], augment=True)
-    val_ds   = CifarCarTruckDataset(x_all[val_idx],   y_all[val_idx],   augment=False)
+    # compute stats from training split only to avoid val leakage
+    x_train = x_all[train_idx]
+    mean = torch.tensor(x_train.mean(axis=(0, 2, 3))).view(3, 1, 1)
+    std  = torch.tensor(x_train.std(axis=(0, 2, 3))).view(3, 1, 1)
+
+    train_ds = CifarCarTruckDataset(x_train,           y_all[train_idx], mean, std, augment=True)
+    val_ds   = CifarCarTruckDataset(x_all[val_idx],    y_all[val_idx],   mean, std, augment=False)
 
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True,
                               num_workers=num_workers, pin_memory=True)

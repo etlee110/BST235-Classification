@@ -13,7 +13,7 @@ def _conv_block(in_channels, out_channels):
 
 
 class CNN(nn.Module):
-    """3-block CNN for 32×32 RGB images (binary classification: car vs truck).
+    """3-block CNN for 32×32 RGB images (binary classification: airplane vs truck).
 
     Spatial resolution after each block (32×32 input):
         Block 1 (32 ch)  → 16×16

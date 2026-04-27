@@ -63,3 +63,16 @@ python3 src/parse_results.py --log_dir output/logs
 2. **`src/dataset.py`** — implement `CustomDataset.__init__`, `__len__`, `__getitem__`
 3. **`src/model.py`** — replace `MLP` with your architecture
 4. **`src/main.py`** — update the optimizer choices and loss function if needed
+
+
+## Dataset specifics
+
+You're classifying truck(1) or non-truck(0).
+
+```
+Dimensions
+  x_train : (7500, 3, 32, 32)  dtype=float32  range=[0.000, 1.000]
+  x_test  : (2500, 3, 32, 32)  dtype=float32
+  y_train : (7500,)  dtype=int64
+  labels  : {np.int64(0): np.int64(3714), np.int64(1): np.int64(3786)}
+```

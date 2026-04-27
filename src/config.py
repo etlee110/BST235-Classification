@@ -14,7 +14,7 @@ OPTIMIZER = "Adam"
 # Model architecture
 IMAGE_SIZE = 32      # CIFAR images are 32×32
 NUM_CHANNELS = 3     # RGB
-NUM_CLASSES = 2      # binary: car vs truck
+NUM_CLASSES = 2      # binary: airplane vs truck
 
 # Seed
 SEED = 42

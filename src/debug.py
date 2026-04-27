@@ -1,28 +1,24 @@
-import argparse
-import random
-
-import numpy as np
+import matplotlib.pyplot as plt
 import torch
-import torch.nn as nn
-import torch.optim as optim
-
-from config import (
-    DEVICE, NUM_EPOCHS, BATCH_SIZE, LEARNING_RATE, OPTIMIZER,
-    NUM_CLASSES, IMAGE_SIZE, NUM_CHANNELS,
-    CHECKPOINTS_DIR, RESULTS_DIR, LOGS_DIR, SEED,
-)
 from dataset import get_loaders
-from model import CNN
-from train import Trainer
 
+# get a small batch
+train_loader, _ = get_loaders(batch_size=8)
+data_iter = iter(train_loader)
+images, labels = next(data_iter)
 
+# unnormalize if needed (adjust if you used different values)
+mean = torch.tensor([0.4914, 0.4822, 0.4465]).view(3, 1, 1)
+std = torch.tensor([0.2470, 0.2435, 0.2616]).view(3, 1, 1)
+images = images * std + mean
 
+# plot
+fig, axes = plt.subplots(1, 8, figsize=(16, 3))
+for i in range(8):
+    img = images[i].permute(1, 2, 0).numpy()
+    axes[i].imshow(img)
+    axes[i].set_title(f"Label: {labels[i].item()}")
+    axes[i].axis("off")
 
-train_loader, val_loader = get_loaders(batch_size=BATCH_SIZE)
-
-
-for x, y in train_loader:
-    print(x.shape, y.shape)
-    print(y[:20])
-    print(y.min().item(), y.max().item())
-    break
+plt.tight_layout()
+plt.show()
