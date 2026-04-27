@@ -6,7 +6,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from config import *
+from config import (
+    DEVICE, NUM_EPOCHS, BATCH_SIZE, LEARNING_RATE, OPTIMIZER,
+    NUM_CLASSES, IMAGE_SIZE, NUM_CHANNELS,
+    CHECKPOINTS_DIR, RESULTS_DIR, LOGS_DIR, SEED,
+)
 from dataset import get_loaders
 from model import CNN
 from train import Trainer
