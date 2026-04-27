@@ -12,8 +12,9 @@ LEARNING_RATE = 1e-3
 OPTIMIZER = "Adam"
 
 # Model architecture
-INPUT_DIM = 128
-NUM_CLASSES = 10
+IMAGE_SIZE = 32      # CIFAR images are 32×32
+NUM_CHANNELS = 3     # RGB
+NUM_CLASSES = 2      # binary: car vs truck
 
 # Seed
 SEED = 42

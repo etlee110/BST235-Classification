@@ -8,7 +8,7 @@ import torch.optim as optim
 
 from config import *
 from dataset import get_loaders
-from model import MLP
+from model import CNN
 from train import Trainer
 
 
@@ -28,15 +28,16 @@ def main():
         "BATCH_SIZE": BATCH_SIZE,
         "LEARNING_RATE": args.learning_rate if args.learning_rate else LEARNING_RATE,
         "OPTIMIZER": args.optimizer if args.optimizer else OPTIMIZER,
-        "INPUT_DIM": INPUT_DIM,
         "NUM_CLASSES": NUM_CLASSES,
+        "IMAGE_SIZE": IMAGE_SIZE,
+        "NUM_CHANNELS": NUM_CHANNELS,
         "CHECKPOINTS_DIR": CHECKPOINTS_DIR,
         "RESULTS_DIR": RESULTS_DIR,
         "LOGS_DIR": LOGS_DIR,
         "SEED": SEED,
     }
 
-    model = MLP(INPUT_DIM, NUM_CLASSES).to(DEVICE)
+    model = CNN(NUM_CLASSES).to(DEVICE)
     loss_fn = nn.CrossEntropyLoss()
 
     opt_map = {
